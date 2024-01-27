@@ -10,8 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "alea": "^1.0.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "simplex-noise": "^4.0.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",

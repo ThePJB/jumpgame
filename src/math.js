@@ -67,7 +67,7 @@ export function cam_vp(cam_pos, cam_dir, fov, aspect, z_near, z_far) {
     let view_matrix = mat4_view(cam_pos, cam_dir);
     let view_matrix_transposed = mat4_transpose(view_matrix);
     let projection_matrix = mat4_proj(fov, aspect, z_near, z_far);
-    return mat4_mul(projection_matrix, view_matrix_transposed);
+    return mat4_transpose(mat4_mul(projection_matrix, view_matrix_transposed));
 }
 
 // Helper functions for vector operations
