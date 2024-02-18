@@ -1,5 +1,6 @@
 export function GetContext(canvas) {
-    let gl = canvas.getContext('webgl');
+    console.log("initializing context");
+    let gl = canvas.getContext('webgl2');
 
     if (!gl) {
         console.error('Unable to initialize WebGL. Your browser may not support it.');
@@ -11,22 +12,22 @@ export function GetContext(canvas) {
 
     const vertexShaderSource = `
         attribute vec4 a_position;
-        attribute vec3 a_normal; // New normal attribute
+        attribute vec3 a_colour; // New normal attribute
         uniform mat4 u_cameraMatrix;
-        varying vec3 v_normal; // Pass the normal to the fragment shader
+        varying vec3 v_colour; // Pass the normal to the fragment shader
 
         void main() {
             gl_Position = u_cameraMatrix * a_position;
-            v_normal = a_normal;
+            v_colour = a_colour;
         }
     `;
     const fragmentShaderSource = `
         precision mediump float;
-        varying vec3 v_normal; // Receive the normal from the vertex shader
+        varying vec3 v_colour; // Receive the normal from the vertex shader
 
         void main() {
             // Use the normal for shading or other calculations
-            gl_FragColor = vec4(v_normal, 1.0);
+            gl_FragColor = vec4(v_colour, 1.0);
         }
     `;
 
@@ -55,7 +56,7 @@ export function GetContext(canvas) {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
 
     let positionAttributeLocation = gl.getAttribLocation(program, 'a_position');
-    let normalAttributeLocation = gl.getAttribLocation(program, 'a_normal'); // New normal attribute location
+    let normalAttributeLocation = gl.getAttribLocation(program, 'a_colour'); // New normal attribute location
     gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 6 * Float32Array.BYTES_PER_ELEMENT, 0);
     gl.enableVertexAttribArray(positionAttributeLocation);
 
@@ -72,28 +73,30 @@ export function GetContext(canvas) {
         positionAttributeLocation,
         normalAttributeLocation,
         program,
-        draw: function(indexedMesh, camMat) {
+        indicesLength: 0,
+        setMesh: function(indexedMesh) {
+            // Update the VBO with new data
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(indexedMesh.verts.flat()), gl.STATIC_DRAW);
+            // Update the IBO with new data
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indexedMesh.inds), gl.STATIC_DRAW);
+            this.indicesLength = indexedMesh.inds.length;
+        },
+        draw: function(clearColour, camMat) {
             const gl = this.gl;
             gl.viewport(0, 0, canvas.width, canvas.height);
             gl.useProgram(this.program);
             gl.uniformMatrix4fv(this.cameraMatrixLocation, false, camMat);
 
-            this.t += 0.01; // Increment t on each frame
-
-            // Update the VBO with new data
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(indexedMesh.vertices), gl.STATIC_DRAW);
-
-            // Update the IBO with new data
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indexedMesh.indices), gl.STATIC_DRAW);
+            this.t += 0.05; // Increment t on each frame
 
             // Your drawing logic using indexed drawing
-            gl.clearColor(0.8, 0.8, 0.8, 1.0);
+            gl.clearColor(clearColour[0], clearColour[1], clearColour[2], 1.0);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
             // Draw using indexed drawing
-            gl.drawElements(gl.TRIANGLES, indexedMesh.indices.length, gl.UNSIGNED_SHORT, 0);
+            gl.drawElements(gl.TRIANGLES, this.indicesLength, gl.UNSIGNED_INT, 0);
         }
     };
 }
